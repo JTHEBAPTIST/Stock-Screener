@@ -19,3 +19,4 @@ def run_screener(exchanges, sectors, min_market_cap):
         df = df[df['5000L by MCAP ($MM)'] > (min_market_cap * 1000)]
 
     return df.reset_index(drop=True)
+
