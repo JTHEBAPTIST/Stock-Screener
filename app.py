@@ -1,11 +1,11 @@
 import streamlit as st
-from tabs import screener, analysis  # Add analysis here (and performance later)
+from tabs import screener, analysis, performance  # Now including performance
 
 # Define all available tabs
 TABS = {
     "Screener": screener.screener_tab,
     "Analysis": analysis.analysis_tab,
-    # "Performance": performance.performance_tab  # You can add this later
+    "Performance": performance.performance_tab  # ✅ Included here!
 }
 
 # Streamlit page config
