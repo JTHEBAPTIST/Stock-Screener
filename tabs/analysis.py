@@ -20,9 +20,13 @@ def analysis_tab():
 
     with col1:
         optimization_type = st.selectbox("Optimization Type", ["Mean-Variance", "Max Sharpe"])
+    
+    sector_options = load_sector_options()
     with col2:
-        sector_options = load_sector_options()
-        selected_universe = st.multiselect("Choose Sectors", sector_options)
+        select_all = st.checkbox("Select All Sectors")
+        selected_universe = st.multiselect("Choose Sectors", sector_options,
+                                           default=sector_options if select_all else [])
+    
     with col3:
         risk_aversion = st.slider("Risk Aversion", 0.0, 10.0, 2.0)
 
@@ -38,6 +42,10 @@ def analysis_tab():
     if st.button("🚀 Run Optimization"):
         with st.spinner("Optimizing portfolio using Riskfolio-Lib..."):
             try:
+                if not selected_universe:
+                    st.warning("⚠️ Please select at least one sector.")
+                    return
+
                 start_time = time.time()
 
                 weights_df, port = run_optimizer(
