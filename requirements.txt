@@ -1,6 +1,6 @@
 streamlit
 pandas
 numpy
-openpyxl
-riskfolio-lib
 yfinance
+riskfolio-lib
+matplotlib
