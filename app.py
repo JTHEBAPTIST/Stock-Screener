@@ -1,28 +1,19 @@
-# app.py
-
 import streamlit as st
-from tabs import screener  # You can import performance, analysis later
+from tabs import screener, analysis  # Add analysis here (and performance later)
 
-# Define available tabs
+# Define all available tabs
 TABS = {
     "Screener": screener.screener_tab,
-    # "Performance": performance.performance_tab,
-    # "Analysis": analysis.analysis_tab
+    "Analysis": analysis.analysis_tab,
+    # "Performance": performance.performance_tab  # You can add this later
 }
 
-# Page config
-st.set_page_config(
-    page_title="Quant Equity Dashboard",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+# Streamlit page config
+st.set_page_config(page_title="Quantitative Equity Dashboard", layout="wide")
 
-# Main title and sidebar
-st.title("📈 Quantitative Equity Dashboard")
+# Sidebar
 st.sidebar.title("Navigation")
-
-# Tab selector
 selected_tab = st.sidebar.radio("Choose a Tab", list(TABS.keys()))
 
-# Run selected tab
+# Render selected tab
 TABS[selected_tab]()
