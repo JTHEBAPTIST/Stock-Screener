@@ -6,12 +6,15 @@ import riskfolio as rp
 def run_optimizer(sector_selection, risk_aversion, tracking_error_limit,
                   optimization_type, max_weight=0.2, max_holdings=15):
     
-    # Load tickers and sector info from your cleaned CSV
+    # Load stock universe from cleaned file
     df = pd.read_csv("data/tickers_full_cleaned.csv")
 
     # Filter by selected sectors
     if sector_selection:
         df = df[df['FactSet Econ Sector'].isin(sector_selection)]
+
+    if df.empty:
+        raise ValueError("No tickers found for the selected sectors. Please check your filter.")
 
     tickers = df["FDS Symbol Ticker"].dropna().unique().tolist()
     sector_map = dict(zip(df["FDS Symbol Ticker"], df["FactSet Econ Sector"]))
@@ -20,25 +23,24 @@ def run_optimizer(sector_selection, risk_aversion, tracking_error_limit,
     price_data = yf.download(tickers, start="2021-01-01", end="2024-01-01")["Adj Close"]
     price_data = price_data.dropna(axis=1)
 
-    # Calculate daily returns
+    # Calculate returns
     returns = price_data.pct_change().dropna()
+
     if returns.shape[1] < 2:
         raise ValueError("Not enough tickers with valid data after filtering.")
 
-    # Re-map sector info after dropping missing tickers
+    # Re-map sector data only for valid tickers
     filtered_tickers = returns.columns.tolist()
     sector_map = {k: v for k, v in sector_map.items() if k in filtered_tickers}
 
-    # Create portfolio object
+    # Build portfolio
     port = rp.Portfolio(returns=returns)
     port.assets_stats(method_mu='hist', method_cov='ledoit')
 
-    # Select objective
     model = 'Classic'
     rm = 'MV'
     obj = 'Sharpe' if optimization_type == 'Max Sharpe' else 'MinRisk'
 
-    # Run optimizer
     weights = port.optimization(
         model=model,
         rm=rm,
@@ -48,13 +50,13 @@ def run_optimizer(sector_selection, risk_aversion, tracking_error_limit,
         hist=True,
         upper_bounds=max_weight,
         lower_bounds=0.01,
-        maxnumassets=max_holdings
+        maxnumassets=min(max_holdings, len(filtered_tickers))
     )
 
-    # Return formatted weights + portfolio object
+    # Format output
     weights_df = weights.reset_index()
     weights_df.columns = ['Ticker', 'Weight']
     weights_df['Sector'] = weights_df['Ticker'].map(sector_map)
-    weights_df['Contribution'] = weights_df['Weight'] * 100  # Placeholder for now
+    weights_df['Contribution'] = weights_df['Weight'] * 100  # Placeholder
 
     return weights_df, port
