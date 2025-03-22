@@ -1,236 +1,92 @@
-{
- "cells": [
-  {
-   "cell_type": "code",
-   "execution_count": 4,
-   "id": "5e9e5727-592a-4efc-acf2-5ab74197a72d",
-   "metadata": {},
-   "outputs": [
-    {
-     "name": "stdout",
-     "output_type": "stream",
-     "text": [
-      "Requirement already satisfied: streamlit in c:\\users\\admin\\.conda\\envs\\zipline-env\\lib\\site-packages (1.43.2)\n",
-      "Collecting jupytext\n",
-      "  Downloading jupytext-1.16.7-py3-none-any.whl.metadata (13 kB)\n",
-      "Requirement already satisfied: altair<6,>=4.0 in c:\\users\\admin\\.conda\\envs\\zipline-env\\lib\\site-packages (from streamlit) (5.5.0)\n",
-      "Requirement already satisfied: blinker<2,>=1.0.0 in c:\\users\\admin\\appdata\\roaming\\python\\python39\\site-packages (from streamlit) (1.8.2)\n",
-      "Requirement already satisfied: cachetools<6,>=4.0 in c:\\users\\admin\\.conda\\envs\\zipline-env\\lib\\site-packages (from streamlit) (5.5.2)\n",
-      "Requirement already satisfied: click<9,>=7.0 in c:\\users\\admin\\appdata\\roaming\\python\\python39\\site-packages (from streamlit) (8.1.7)\n",
-      "Requirement already satisfied: numpy<3,>=1.23 in c:\\users\\admin\\appdata\\roaming\\python\\python39\\site-packages (from streamlit) (1.26.4)\n",
-      "Requirement already satisfied: packaging<25,>=20 in c:\\users\\admin\\.conda\\envs\\zipline-env\\lib\\site-packages (from streamlit) (24.1)\n",
-      "Requirement already satisfied: pandas<3,>=1.4.0 in c:\\users\\admin\\appdata\\roaming\\python\\python39\\site-packages (from streamlit) (2.2.3)\n",
-      "Requirement already satisfied: pillow<12,>=7.1.0 in c:\\users\\admin\\.conda\\envs\\zipline-env\\lib\\site-packages (from streamlit) (10.4.0)\n",
-      "Requirement already satisfied: protobuf<6,>=3.20 in c:\\users\\admin\\.conda\\envs\\zipline-env\\lib\\site-packages (from streamlit) (5.29.4)\n",
-      "Requirement already satisfied: pyarrow>=7.0 in c:\\users\\admin\\appdata\\roaming\\python\\python39\\site-packages (from streamlit) (16.1.0)\n",
-      "Requirement already satisfied: requests<3,>=2.27 in c:\\users\\admin\\appdata\\roaming\\python\\python39\\site-packages (from streamlit) (2.32.3)\n",
-      "Requirement already satisfied: tenacity<10,>=8.1.0 in c:\\users\\admin\\.conda\\envs\\zipline-env\\lib\\site-packages (from streamlit) (8.4.2)\n",
-      "Requirement already satisfied: toml<2,>=0.10.1 in c:\\users\\admin\\.conda\\envs\\zipline-env\\lib\\site-packages (from streamlit) (0.10.2)\n",
-      "Requirement already satisfied: typing-extensions<5,>=4.4.0 in c:\\users\\admin\\appdata\\roaming\\python\\python39\\site-packages (from streamlit) (4.12.2)\n",
-      "Requirement already satisfied: watchdog<7,>=2.1.5 in c:\\users\\admin\\.conda\\envs\\zipline-env\\lib\\site-packages (from streamlit) (6.0.0)\n",
-      "Requirement already satisfied: gitpython!=3.1.19,<4,>=3.0.7 in c:\\users\\admin\\.conda\\envs\\zipline-env\\lib\\site-packages (from streamlit) (3.1.44)\n",
-      "Requirement already satisfied: pydeck<1,>=0.8.0b4 in c:\\users\\admin\\.conda\\envs\\zipline-env\\lib\\site-packages (from streamlit) (0.9.1)\n",
-      "Requirement already satisfied: tornado<7,>=6.0.3 in c:\\users\\admin\\.conda\\envs\\zipline-env\\lib\\site-packages (from streamlit) (6.4.1)\n",
-      "Requirement already satisfied: markdown-it-py>=1.0 in c:\\users\\admin\\appdata\\roaming\\python\\python39\\site-packages (from jupytext) (3.0.0)\n",
-      "Collecting mdit-py-plugins (from jupytext)\n",
-      "  Downloading mdit_py_plugins-0.4.2-py3-none-any.whl.metadata (2.8 kB)\n",
-      "Requirement already satisfied: nbformat in c:\\users\\admin\\appdata\\roaming\\python\\python39\\site-packages (from jupytext) (5.10.4)\n",
-      "Requirement already satisfied: pyyaml in c:\\users\\admin\\appdata\\roaming\\python\\python39\\site-packages (from jupytext) (6.0.1)\n",
-      "Requirement already satisfied: tomli in c:\\users\\admin\\.conda\\envs\\zipline-env\\lib\\site-packages (from jupytext) (2.0.1)\n",
-      "Requirement already satisfied: jinja2 in c:\\users\\admin\\appdata\\roaming\\python\\python39\\site-packages (from altair<6,>=4.0->streamlit) (3.1.4)\n",
-      "Requirement already satisfied: jsonschema>=3.0 in c:\\users\\admin\\.conda\\envs\\zipline-env\\lib\\site-packages (from altair<6,>=4.0->streamlit) (4.23.0)\n",
-      "Requirement already satisfied: narwhals>=1.14.2 in c:\\users\\admin\\.conda\\envs\\zipline-env\\lib\\site-packages (from altair<6,>=4.0->streamlit) (1.31.0)\n",
-      "Requirement already satisfied: colorama in c:\\users\\admin\\.conda\\envs\\zipline-env\\lib\\site-packages (from click<9,>=7.0->streamlit) (0.4.6)\n",
-      "Requirement already satisfied: gitdb<5,>=4.0.1 in c:\\users\\admin\\.conda\\envs\\zipline-env\\lib\\site-packages (from gitpython!=3.1.19,<4,>=3.0.7->streamlit) (4.0.12)\n",
-      "Requirement already satisfied: mdurl~=0.1 in c:\\users\\admin\\appdata\\roaming\\python\\python39\\site-packages (from markdown-it-py>=1.0->jupytext) (0.1.2)\n",
-      "Requirement already satisfied: python-dateutil>=2.8.2 in c:\\users\\admin\\.conda\\envs\\zipline-env\\lib\\site-packages (from pandas<3,>=1.4.0->streamlit) (2.9.0.post0)\n",
-      "Requirement already satisfied: pytz>=2020.1 in c:\\users\\admin\\appdata\\roaming\\python\\python39\\site-packages (from pandas<3,>=1.4.0->streamlit) (2024.1)\n",
-      "Requirement already satisfied: tzdata>=2022.7 in c:\\users\\admin\\appdata\\roaming\\python\\python39\\site-packages (from pandas<3,>=1.4.0->streamlit) (2024.1)\n",
-      "Requirement already satisfied: charset-normalizer<4,>=2 in c:\\users\\admin\\.conda\\envs\\zipline-env\\lib\\site-packages (from requests<3,>=2.27->streamlit) (2.1.1)\n",
-      "Requirement already satisfied: idna<4,>=2.5 in c:\\users\\admin\\.conda\\envs\\zipline-env\\lib\\site-packages (from requests<3,>=2.27->streamlit) (3.7)\n",
-      "Requirement already satisfied: urllib3<3,>=1.21.1 in c:\\users\\admin\\.conda\\envs\\zipline-env\\lib\\site-packages (from requests<3,>=2.27->streamlit) (1.26.20)\n",
-      "Requirement already satisfied: certifi>=2017.4.17 in c:\\users\\admin\\.conda\\envs\\zipline-env\\lib\\site-packages (from requests<3,>=2.27->streamlit) (2024.7.4)\n",
-      "Collecting fastjsonschema>=2.15 (from nbformat->jupytext)\n",
-      "  Downloading fastjsonschema-2.21.1-py3-none-any.whl.metadata (2.2 kB)\n",
-      "Requirement already satisfied: jupyter-core!=5.0.*,>=4.12 in c:\\users\\admin\\appdata\\roaming\\python\\python39\\site-packages (from nbformat->jupytext) (5.7.2)\n",
-      "Requirement already satisfied: traitlets>=5.1 in c:\\users\\admin\\appdata\\roaming\\python\\python39\\site-packages (from nbformat->jupytext) (5.14.3)\n",
-      "Requirement already satisfied: smmap<6,>=3.0.1 in c:\\users\\admin\\.conda\\envs\\zipline-env\\lib\\site-packages (from gitdb<5,>=4.0.1->gitpython!=3.1.19,<4,>=3.0.7->streamlit) (5.0.2)\n",
-      "Requirement already satisfied: MarkupSafe>=2.0 in c:\\users\\admin\\appdata\\roaming\\python\\python39\\site-packages (from jinja2->altair<6,>=4.0->streamlit) (2.1.5)\n",
-      "Requirement already satisfied: attrs>=22.2.0 in c:\\users\\admin\\appdata\\roaming\\python\\python39\\site-packages (from jsonschema>=3.0->altair<6,>=4.0->streamlit) (23.2.0)\n",
-      "Requirement already satisfied: jsonschema-specifications>=2023.03.6 in c:\\users\\admin\\.conda\\envs\\zipline-env\\lib\\site-packages (from jsonschema>=3.0->altair<6,>=4.0->streamlit) (2024.10.1)\n",
-      "Requirement already satisfied: referencing>=0.28.4 in c:\\users\\admin\\.conda\\envs\\zipline-env\\lib\\site-packages (from jsonschema>=3.0->altair<6,>=4.0->streamlit) (0.36.2)\n",
-      "Requirement already satisfied: rpds-py>=0.7.1 in c:\\users\\admin\\.conda\\envs\\zipline-env\\lib\\site-packages (from jsonschema>=3.0->altair<6,>=4.0->streamlit) (0.23.1)\n",
-      "Requirement already satisfied: platformdirs>=2.5 in c:\\users\\admin\\.conda\\envs\\zipline-env\\lib\\site-packages (from jupyter-core!=5.0.*,>=4.12->nbformat->jupytext) (4.2.2)\n",
-      "Requirement already satisfied: pywin32>=300 in c:\\users\\admin\\.conda\\envs\\zipline-env\\lib\\site-packages (from jupyter-core!=5.0.*,>=4.12->nbformat->jupytext) (306)\n",
-      "Requirement already satisfied: six>=1.5 in c:\\users\\admin\\.conda\\envs\\zipline-env\\lib\\site-packages (from python-dateutil>=2.8.2->pandas<3,>=1.4.0->streamlit) (1.16.0)\n",
-      "Downloading jupytext-1.16.7-py3-none-any.whl (154 kB)\n",
-      "   ---------------------------------------- 0.0/154.2 kB ? eta -:--:--\n",
-      "   ----- --------------------------------- 20.5/154.2 kB 330.3 kB/s eta 0:00:01\n",
-      "   ----------------------------- ---------- 112.6/154.2 kB 1.3 MB/s eta 0:00:01\n",
-      "   ---------------------------------------- 154.2/154.2 kB 1.5 MB/s eta 0:00:00\n",
-      "Downloading mdit_py_plugins-0.4.2-py3-none-any.whl (55 kB)\n",
-      "   ---------------------------------------- 0.0/55.3 kB ? eta -:--:--\n",
-      "   ---------------------------------------- 55.3/55.3 kB 1.5 MB/s eta 0:00:00\n",
-      "Downloading fastjsonschema-2.21.1-py3-none-any.whl (23 kB)\n",
-      "Installing collected packages: fastjsonschema, mdit-py-plugins, jupytext\n",
-      "Successfully installed fastjsonschema-2.21.1 jupytext-1.16.7 mdit-py-plugins-0.4.2\n",
-      "Note: you may need to restart the kernel to use updated packages.\n"
-     ]
-    },
-    {
-     "name": "stderr",
-     "output_type": "stream",
-     "text": [
-      "  WARNING: The scripts jupytext-config.exe and jupytext.exe are installed in 'C:\\Users\\Admin\\.conda\\envs\\zipline-env\\Scripts' which is not on PATH.\n",
-      "  Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.\n"
-     ]
-    }
-   ],
-   "source": [
-    "pip install streamlit jupytext"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": 8,
-   "id": "8ee4b008-b504-4418-8119-9c8b1c3409a3",
-   "metadata": {},
-   "outputs": [
-    {
-     "ename": "ModuleNotFoundError",
-     "evalue": "No module named 'engine'",
-     "output_type": "error",
-     "traceback": [
-      "\u001b[1;31m---------------------------------------------------------------------------\u001b[0m",
-      "\u001b[1;31mModuleNotFoundError\u001b[0m                       Traceback (most recent call last)",
-      "Cell \u001b[1;32mIn[8], line 5\u001b[0m\n\u001b[0;32m      3\u001b[0m \u001b[38;5;28;01mimport\u001b[39;00m \u001b[38;5;21;01mstreamlit\u001b[39;00m \u001b[38;5;28;01mas\u001b[39;00m \u001b[38;5;21;01mst\u001b[39;00m\n\u001b[0;32m      4\u001b[0m \u001b[38;5;28;01mimport\u001b[39;00m \u001b[38;5;21;01mpandas\u001b[39;00m \u001b[38;5;28;01mas\u001b[39;00m \u001b[38;5;21;01mpd\u001b[39;00m\n\u001b[1;32m----> 5\u001b[0m \u001b[38;5;28;01mfrom\u001b[39;00m \u001b[38;5;21;01mengine\u001b[39;00m\u001b[38;5;21;01m.\u001b[39;00m\u001b[38;5;21;01mscreener_engine\u001b[39;00m \u001b[38;5;28;01mimport\u001b[39;00m run_screener\n\u001b[0;32m      7\u001b[0m \u001b[38;5;28;01mdef\u001b[39;00m \u001b[38;5;21mscreener_tab\u001b[39m():\n\u001b[0;32m      8\u001b[0m     st\u001b[38;5;241m.\u001b[39mtitle(\u001b[38;5;124m\"\u001b[39m\u001b[38;5;124mEquity Screener\u001b[39m\u001b[38;5;124m\"\u001b[39m)\n",
-      "\u001b[1;31mModuleNotFoundError\u001b[0m: No module named 'engine'"
-     ]
-    }
-   ],
-   "source": [
-    "# tabs/screener.py\n",
-    "\n",
-    "import streamlit as st\n",
-    "import pandas as pd\n",
-    "from engine.screener_engine import run_screener\n",
-    "\n",
-    "def screener_tab():\n",
-    "    st.title(\"Equity Screener\")\n",
-    "\n",
-    "    # ----- Filters Panel (Top) -----\n",
-    "    st.subheader(\"Select Screening Criteria\")\n",
-    "    col1, col2, col3 = st.columns(3)\n",
-    "\n",
-    "    with col1:\n",
-    "        exchange = st.multiselect(\n",
-    "            \"Exchange\",\n",
-    "            [\"NASDAQ\", \"NYSE\", \"AMEX\"],\n",
-    "            default=[\"NASDAQ\", \"NYSE\", \"AMEX\"]\n",
-    "        )\n",
-    "    \n",
-    "    with col2:\n",
-    "        sector = st.multiselect(\n",
-    "            \"Sector\",\n",
-    "            [\"Technology\", \"Healthcare\", \"Finance\", \"Consumer\", \"Energy\", \"Retail\", \"Utilities\", \"Industrials\"],\n",
-    "            default=[]\n",
-    "        )\n",
-    "\n",
-    "    with col3:\n",
-    "        min_market_cap = st.number_input(\n",
-    "            \"Min Market Cap (Billions USD)\",\n",
-    "            value=10.0,\n",
-    "            step=1.0\n",
-    "        )\n",
-    "\n",
-    "    st.markdown(\"---\")\n",
-    "\n",
-    "    # ----- Optional: Search Bar & Toggle -----\n",
-    "    ticker_search = st.text_input(\"Search for a Ticker or Company Name\")\n",
-    "    show_all_columns = st.checkbox(\"Show All Columns\", value=False)\n",
-    "\n",
-    "    df = run_screener(exchange, sector, min_market_cap)\n",
-    "\n",
-    "    if ticker_search:\n",
-    "        df = df[df['FDS Symbol Ticker'].str.contains(ticker_search, case=False, na=False) |\n",
-    "                df['Company Name'].str.contains(ticker_search, case=False, na=False)]\n",
-    "\n",
-    "    default_cols = [\n",
-    "        \"Company Name\", \"CUSIP\", \"Company Sedol\", \"FactSet Econ Sector\", \"FactSet Ind\",\n",
-    "        \"Gen Sec Type Desc\", \"Nation\", \"Curncy Name\", \"Exchange Name (VND)\", \"Latest Price\",\n",
-    "        \"180D Annualized Std Dev.\", \"Simple Tot Ret (USD) Last Mo\", \"LTM Total Return\",\n",
-    "        \"LTM Total Return S&P 500\", \"Last 12 Month Excess Return\", \"3y ALPHA Rel to Loc Idx\",\n",
-    "        \"In Buy List\", \"S&P 500 60M Std Dev\", \"Bid Price\", \"Ask Price\", \"22D ADV ($MM)\",\n",
-    "        \"5000L by MCAP ($MM)\", \"Max Score\", \"Min Score\", \"1 Mo Fwd Return\",\n",
-    "        \"V&M Model Score\", \"V&M Score (IQR)\", \"PEG Model Score (W)\", \"PEG Model Score (IQR)\",\n",
-    "        \"Multi Factor Model Score (W)\", \"Multi Factor Model Score (IQR)\",\n",
-    "        \"N(0,1) Model Score\", \"N(0,Sigma) Model Score\"\n",
-    "    ]\n",
-    "\n",
-    "    if show_all_columns:\n",
-    "        display_df = df.copy()\n",
-    "    else:\n",
-    "        display_columns = st.multiselect(\"Select Columns to Display\", df.columns.tolist(), default=default_cols)\n",
-    "        display_df = df[display_columns] if display_columns else df\n",
-    "\n",
-    "    st.markdown(\"---\")\n",
-    "    st.subheader(f\"Model Overview: {len(display_df)} Stocks\")\n",
-    "    st.dataframe(display_df)\n",
-    "\n",
-    "    # ----- Expandable Model Sections -----\n",
-    "    with st.expander(\"🔍 PERFORMANCE\"):\n",
-    "        perf_cols = [col for col in df.columns if \"Return\" in col or \"Alpha\" in col or \"Std Dev\" in col]\n",
-    "        st.dataframe(df[[\"FDS Symbol Ticker\", \"Company Name\"] + perf_cols])\n",
-    "\n",
-    "    with st.expander(\"📈 MODEL 1: VAL & MOM\"):\n",
-    "        vm_cols = [col for col in df.columns if \"V&M\" in col]\n",
-    "        st.dataframe(df[[\"FDS Symbol Ticker\", \"Company Name\"] + vm_cols])\n",
-    "\n",
-    "    with st.expander(\"📊 MODEL 2: PEG\"):\n",
-    "        peg_cols = [col for col in df.columns if \"PEG\" in col]\n",
-    "        st.dataframe(df[[\"FDS Symbol Ticker\", \"Company Name\"] + peg_cols])\n",
-    "\n",
-    "    with st.expander(\"🧠 MODEL 3: MULTI FACTOR\"):\n",
-    "        mf_cols = [col for col in df.columns if \"Multi Factor\" in col]\n",
-    "        st.dataframe(df[[\"FDS Symbol Ticker\", \"Company Name\"] + mf_cols])\n",
-    "\n",
-    "    with st.expander(\"🧪 MODEL 4: NORM SCORE\"):\n",
-    "        norm_cols = [col for col in df.columns if \"Model Score\" in col and \"Multi\" not in col and \"V&M\" not in col and \"PEG\" not in col]\n",
-    "        st.dataframe(df[[\"FDS Symbol Ticker\", \"Company Name\"] + norm_cols])\n",
-    "\n",
-    "    # ----- CSV Download -----\n",
-    "    csv = display_df.to_csv(index=False).encode('utf-8')\n",
-    "    st.download_button(\"Download Displayed Data as CSV\", data=csv, file_name=\"screened_stocks.csv\", mime='text/csv')\n"
-   ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "cbe0e41f-e99a-4080-ab40-77005dfbdb07",
-   "metadata": {},
-   "outputs": [],
-   "source": []
-  }
- ],
- "metadata": {
-  "kernelspec": {
-   "display_name": "Python (zipline-env)",
-   "language": "python",
-   "name": "zipline-env"
-  },
-  "language_info": {
-   "codemirror_mode": {
-    "name": "ipython",
-    "version": 3
-   },
-   "file_extension": ".py",
-   "mimetype": "text/x-python",
-   "name": "python",
-   "nbconvert_exporter": "python",
-   "pygments_lexer": "ipython3",
-   "version": "3.9.19"
-  }
- },
- "nbformat": 4,
- "nbformat_minor": 5
-}
+# tabs/screener.py
+
+import streamlit as st
+import pandas as pd
+from engine.screener_engine import run_screener
+
+def screener_tab():
+    st.title("Equity Screener")
+
+    # ----- Filters Panel (Top) -----
+    st.subheader("Select Screening Criteria")
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        exchange = st.multiselect(
+            "Exchange",
+            ["NASDAQ", "NYSE", "AMEX"],
+            default=["NASDAQ", "NYSE", "AMEX"]
+        )
+    
+    with col2:
+        sector = st.multiselect(
+            "Sector",
+            ["Technology", "Healthcare", "Finance", "Consumer", "Energy", "Retail", "Utilities", "Industrials"],
+            default=[]
+        )
+
+    with col3:
+        min_market_cap = st.number_input(
+            "Min Market Cap (Billions USD)",
+            value=10.0,
+            step=1.0
+        )
+
+    st.markdown("---")
+
+    # ----- Optional: Search Bar & Toggle -----
+    ticker_search = st.text_input("Search for a Ticker or Company Name")
+    show_all_columns = st.checkbox("Show All Columns", value=False)
+
+    df = run_screener(exchange, sector, min_market_cap)
+
+    if ticker_search:
+        df = df[df['FDS Symbol Ticker'].str.contains(ticker_search, case=False, na=False) |
+                df['Company Name'].str.contains(ticker_search, case=False, na=False)]
+
+    default_cols = [
+        "Company Name", "CUSIP", "Company Sedol", "FactSet Econ Sector", "FactSet Ind",
+        "Gen Sec Type Desc", "Nation", "Curncy Name", "Exchange Name (VND)", "Latest Price",
+        "180D Annualized Std Dev.", "Simple Tot Ret (USD) Last Mo", "LTM Total Return",
+        "LTM Total Return S&P 500", "Last 12 Month Excess Return", "3y ALPHA Rel to Loc Idx",
+        "In Buy List", "S&P 500 60M Std Dev", "Bid Price", "Ask Price", "22D ADV ($MM)",
+        "5000L by MCAP ($MM)", "Max Score", "Min Score", "1 Mo Fwd Return",
+        "V&M Model Score", "V&M Score (IQR)", "PEG Model Score (W)", "PEG Model Score (IQR)",
+        "Multi Factor Model Score (W)", "Multi Factor Model Score (IQR)",
+        "N(0,1) Model Score", "N(0,Sigma) Model Score"
+    ]
+
+    if show_all_columns:
+        display_df = df.copy()
+    else:
+        display_columns = st.multiselect("Select Columns to Display", df.columns.tolist(), default=default_cols)
+        display_df = df[display_columns] if display_columns else df
+
+    st.markdown("---")
+    st.subheader(f"Model Overview: {len(display_df)} Stocks")
+    st.dataframe(display_df)
+
+    # ----- Expandable Model Sections -----
+    with st.expander("🔍 PERFORMANCE"):
+        perf_cols = [col for col in df.columns if "Return" in col or "Alpha" in col or "Std Dev" in col]
+        st.dataframe(df[["FDS Symbol Ticker", "Company Name"] + perf_cols])
+
+    with st.expander("📈 MODEL 1: VAL & MOM"):
+        vm_cols = [col for col in df.columns if "V&M" in col]
+        st.dataframe(df[["FDS Symbol Ticker", "Company Name"] + vm_cols])
+
+    with st.expander("📊 MODEL 2: PEG"):
+        peg_cols = [col for col in df.columns if "PEG" in col]
+        st.dataframe(df[["FDS Symbol Ticker", "Company Name"] + peg_cols])
+
+    with st.expander("🧠 MODEL 3: MULTI FACTOR"):
+        mf_cols = [col for col in df.columns if "Multi Factor" in col]
+        st.dataframe(df[["FDS Symbol Ticker", "Company Name"] + mf_cols])
+
+    with st.expander("🧪 MODEL 4: NORM SCORE"):
+        norm_cols = [col for col in df.columns if "Model Score" in col and "Multi" not in col and "V&M" not in col and "PEG" not in col]
+        st.dataframe(df[["FDS Symbol Ticker", "Company Name"] + norm_cols])
+
+    # ----- CSV Download -----
+    csv = display_df.to_csv(index=False).encode('utf-8')
+    st.download_button("Download Displayed Data as CSV", data=csv, file_name="screened_stocks.csv", mime='text/csv')
