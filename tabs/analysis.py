@@ -8,10 +8,10 @@ import riskfolio as rp
 def analysis_tab():
     st.title("📊 Strategy Builder & Optimizer")
 
-    # --- Load sectors from Google Drive CSV ---
-    df = load_portfolio_csv_from_drive()  # ✅ Real source for optimizer
+    # --- Load sector options from the real CSV (Google Drive) ---
+    df = load_portfolio_csv_from_drive()  # ✅ Uses same data as optimizer
     sector_options = sorted(df['Sector'].dropna().unique())
-    st.caption(f"✔️ Loaded {len(sector_options)} unique sectors from Google Drive dataset.")
+    st.caption(f"✔️ Loaded {len(sector_options)} unique sectors from portfolio dataset.")
 
     # --- Strategy Filters ---
     st.subheader("🧠 Strategy Filters")
@@ -61,16 +61,16 @@ def analysis_tab():
                 st.subheader("📋 Optimized Portfolio Allocation")
                 st.dataframe(weights_df)
 
-                # Download weights
+                # Download weights as CSV
                 csv = weights_df.to_csv(index=False).encode("utf-8")
                 st.download_button("Download Portfolio as CSV", csv, file_name="optimized_portfolio.csv")
 
-                # Efficient Frontier
+                # Plot Efficient Frontier
                 st.subheader("📈 Efficient Frontier")
                 fig = plot_efficient_frontier(port)
                 st.pyplot(fig)
 
-                # Send to performance tab
+                # Send to Performance tab
                 if st.button("📤 Send to Performance Tab"):
                     st.session_state["optimized_portfolio"] = weights_df
                     st.success("Portfolio sent to Performance tab.")
