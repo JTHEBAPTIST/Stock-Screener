@@ -30,7 +30,7 @@ def performance_tab():
 
     # Get prices for portfolio tickers
     df_portfolio = df[df['Ticker'].isin(selected_tickers)][["Ticker"] + list(price_cols)].copy()
-    df_portfolio[price_cols] = df_portfolio[price_cols].replace('[\$,]', '', regex=True).astype(float)
+    df_portfolio[price_cols] = df_portfolio[price_cols].replace(r'[\$,]', '', regex=True).astype(float)
     prices = df_portfolio.set_index("Ticker")[price_cols].T
     prices.index = pd.to_datetime(prices.index, errors='coerce')
     prices = prices.dropna(how="all")
@@ -38,7 +38,7 @@ def performance_tab():
 
     # Get SPY benchmark data
     df_spy = df[df['Ticker'] == "SPY"][["Ticker"] + list(price_cols)].copy()
-    df_spy[price_cols] = df_spy[price_cols].replace('[\$,]', '', regex=True).astype(float)
+    df_spy[price_cols] = df_spy[price_cols].replace(r'[\$,]', '', regex=True).astype(float)
     spy_series = df_spy.set_index("Ticker")[price_cols].T.squeeze()
     spy_series.index = pd.to_datetime(spy_series.index, errors='coerce')
     spy_series = spy_series.dropna()
@@ -84,19 +84,20 @@ def performance_tab():
     col4.metric("Total Return (SPY)", f"{s_total:.2f}%")
     col5.metric("Sharpe Ratio (SPY)", f"{s_sharpe:.2f}")
     col6.metric("Max Drawdown (SPY)", f"{s_dd:.2f}%")
-st.subheader("📥 Download Performance Data")
 
-# Merge and export daily values
-perf_df = pd.DataFrame({
-    "Date": portfolio.index,
-    "Portfolio Value": portfolio.values,
-    "S&P 500 (SPY)": spy_norm.values
-})
-perf_df.set_index("Date", inplace=True)
+    # ✅ Now safe to use export block
+    st.subheader("📥 Download Performance Data")
 
-csv_perf = perf_df.to_csv().encode("utf-8")
-st.download_button("Download Portfolio vs SPY CSV", data=csv_perf, file_name="portfolio_vs_spy.csv", mime='text/csv')
+    perf_df = pd.DataFrame({
+        "Date": portfolio.index,
+        "Portfolio Value": portfolio.values,
+        "S&P 500 (SPY)": spy_norm.values
+    })
+    perf_df.set_index("Date", inplace=True)
 
-# Optional: download weights again
-csv_weights = weights_df.to_csv(index=False).encode("utf-8")
-st.download_button("Download Portfolio Weights", data=csv_weights, file_name="optimized_weights.csv", mime='text/csv')
+    csv_perf = perf_df.to_csv().encode("utf-8")
+    st.download_button("Download Portfolio vs SPY CSV", data=csv_perf, file_name="portfolio_vs_spy.csv", mime='text/csv')
+
+    # Optional: download weights again
+    csv_weights = weights_df.to_csv(index=False).encode("utf-8")
+    st.download_button("Download Portfolio Weights", data=csv_weights, file_name="optimized_weights.csv", mime='text/csv')
