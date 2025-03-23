@@ -1,3 +1,4 @@
+from engine.data_loader import load_filtered_top_stocks
 import pandas as pd
 import numpy as np
 import riskfolio as rp
