@@ -3,21 +3,20 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import time
 from engine.optimizer_engine import run_optimizer
+from engine.data_loader import load_filtered_top_stocks
 import riskfolio as rp
-
-@st.cache_data
-def load_sector_options():
-    df = pd.read_csv("data/filtered_top_stocks.csv")
-    return sorted(df['Sector'].dropna().unique())
 
 def analysis_tab():
     st.title("📊 Strategy Builder & Optimizer")
+
+    # --- Load sectors from cached data ---
+    df = load_filtered_top_stocks()
+    sector_options = sorted(df['Sector'].dropna().unique())
 
     # --- Filters ---
     st.subheader("🧠 Strategy Filters")
     col1, col2 = st.columns([2, 1])
     with col1:
-        sector_options = load_sector_options()
         select_all = st.checkbox("Select All Sectors")
         selected_sectors = sector_options if select_all else st.multiselect("Choose Sectors", sector_options)
 
