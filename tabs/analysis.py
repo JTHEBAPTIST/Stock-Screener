@@ -2,16 +2,31 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import time
+import difflib
 from engine.optimizer_engine import run_optimizer, load_portfolio_csv_from_drive
 import riskfolio as rp
 
 def analysis_tab():
     st.title("📊 Strategy Builder & Optimizer")
 
-    # --- Load sector options from the real CSV (Google Drive) ---
-    df = load_portfolio_csv_from_drive()  # ✅ Uses same data as optimizer
-    sector_options = sorted(df['Sector'].dropna().unique())
-    st.caption(f"✔️ Loaded {len(sector_options)} unique sectors from portfolio dataset.")
+    # --- Load CSV from Google Drive ---
+    df = load_portfolio_csv_from_drive()
+
+    # 🧠 Debug: show available columns
+    st.caption(f"📄 Columns in dataset: {df.columns.tolist()}")
+
+    # --- Detect Sector Column ---
+    sector_col = None
+    potential_cols = difflib.get_close_matches("Sector", df.columns, n=1)
+    if potential_cols:
+        sector_col = potential_cols[0]
+    else:
+        st.error("❌ No column resembling 'Sector' found in uploaded data.")
+        st.stop()
+
+    # --- Get Sector Options ---
+    sector_options = sorted(df[sector_col].dropna().unique())
+    st.caption(f"✔️ Using column: `{sector_col}` — found {len(sector_options)} unique sectors.")
 
     # --- Strategy Filters ---
     st.subheader("🧠 Strategy Filters")
@@ -61,16 +76,16 @@ def analysis_tab():
                 st.subheader("📋 Optimized Portfolio Allocation")
                 st.dataframe(weights_df)
 
-                # Download weights as CSV
+                # Download weights
                 csv = weights_df.to_csv(index=False).encode("utf-8")
                 st.download_button("Download Portfolio as CSV", csv, file_name="optimized_portfolio.csv")
 
-                # Plot Efficient Frontier
+                # Efficient Frontier
                 st.subheader("📈 Efficient Frontier")
                 fig = plot_efficient_frontier(port)
                 st.pyplot(fig)
 
-                # Send to Performance tab
+                # Send to performance tab
                 if st.button("📤 Send to Performance Tab"):
                     st.session_state["optimized_portfolio"] = weights_df
                     st.success("Portfolio sent to Performance tab.")
