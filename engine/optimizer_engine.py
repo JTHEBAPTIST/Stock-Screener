@@ -1,44 +1,47 @@
 import pandas as pd
 import numpy as np
-import yfinance as yf
 import riskfolio as rp
-import streamlit as st  # to show log info inside UI
+import streamlit as st
 
-def run_optimizer(sector_selection, risk_aversion, tracking_error_limit,
-                  optimization_type, max_weight=0.2, max_holdings=15):
+def run_optimizer(sector_selection, min_market_cap_bil, risk_aversion,
+                  tracking_error_limit, optimization_type, max_weight=0.2, max_holdings=15):
     
-    # Load stock universe
-    df = pd.read_csv("data/tickers_full_cleaned.csv")
-
-    # Filter by selected sectors
+    # Load full data
+    df = pd.read_csv("data/filtered_top_stocks.csv")
+    
+    # Filter: sector & market cap
     if sector_selection:
-        df = df[df['FactSet Econ Sector'].isin(sector_selection)]
+        df = df[df['Sector'].isin(sector_selection)]
+    df = df[df['Marketcap'] >= min_market_cap_bil * 1e9]
 
     if df.empty:
-        raise ValueError("No tickers found for the selected sectors. Please check your filter.")
+        raise ValueError("No tickers matched the selected filters.")
 
-    tickers = df["FDS Symbol Ticker"].dropna().unique().tolist()
-    sector_map = dict(zip(df["FDS Symbol Ticker"], df["FactSet Econ Sector"]))
+    # Extract metadata and price data
+    metadata_cols = ['Ticker', 'Sector']
+    price_cols = df.columns[5:]  # Assuming first 5 columns are metadata
 
-    # Download price data
-    st.caption(f"📡 Downloading price data for {len(tickers)} tickers...")
-    price_data = yf.download(tickers, start="2021-01-01", end="2024-01-01")["Adj Close"]
+    price_data = df[["Ticker"] + list(price_cols)].copy()
+    price_data[price_cols] = price_data[price_cols].replace('[\$,]', '', regex=True).astype(float)
 
-    # Filter tickers: allow tickers with <10% missing data
-    good_tickers = price_data.columns[price_data.isna().mean() < 0.1]
-    price_data = price_data[good_tickers].dropna()
+    # Reshape: rows = dates, columns = tickers
+    df_prices = price_data.set_index("Ticker")[price_cols].T
+    df_prices.index = pd.to_datetime(df_prices.index, errors='coerce')
+    df_prices = df_prices.dropna(how="all")
 
-    st.caption(f"✅ {len(good_tickers)} tickers passed data quality check.")
+    # Drop tickers with too much missing data
+    valid_tickers = df_prices.columns[df_prices.isna().mean() < 0.1]
+    price_data = df_prices[valid_tickers].dropna()
+
+    st.caption(f"✅ {len(valid_tickers)} tickers passed data quality check.")
 
     # Calculate returns
     returns = price_data.pct_change().dropna()
 
     if returns.shape[1] < 2:
-        raise ValueError("Not enough tickers with valid data after filtering.")
+        raise ValueError("Not enough clean tickers to run optimization.")
 
-    # Update sector mapping to only include valid tickers
-    filtered_tickers = returns.columns.tolist()
-    sector_map = {k: v for k, v in sector_map.items() if k in filtered_tickers}
+    sector_map = dict(zip(df['Ticker'], df['Sector']))
 
     # Build portfolio
     port = rp.Portfolio(returns=returns)
@@ -57,10 +60,10 @@ def run_optimizer(sector_selection, risk_aversion, tracking_error_limit,
         hist=True,
         upper_bounds=max_weight,
         lower_bounds=0.01,
-        maxnumassets=min(max_holdings, len(filtered_tickers))
+        maxnumassets=min(max_holdings, len(returns.columns))
     )
 
-    # Format weights
+    # Format results
     weights_df = weights.reset_index()
     weights_df.columns = ['Ticker', 'Weight']
     weights_df['Sector'] = weights_df['Ticker'].map(sector_map)
