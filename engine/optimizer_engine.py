@@ -3,17 +3,16 @@ import numpy as np
 import riskfolio as rp
 import streamlit as st
 import zipfile
-import io
 
-# ✅ Load static metadata (Ticker, Company, Sector, Industry) from GitHub repo
+# ✅ Load static metadata (Ticker, Company, Sector, Industry)
 @st.cache_data(show_spinner="📥 Loading static metadata...")
 def load_static_metadata():
     return pd.read_csv("data/Static data.csv")
 
-# ✅ Load time series data from uploaded zip (top_5000_stocks.zip)
+# ✅ Load time series data from zipped CSV
 @st.cache_data(show_spinner="📈 Loading time series from ZIP...")
 def load_price_data_from_zip():
-    zip_path = "/mnt/data/top_5000_stocks.zip"
+    zip_path = "data/top_5000_stocks.zip"  # ✅ Correct path inside your GitHub repo
     with zipfile.ZipFile(zip_path, 'r') as z:
         csv_filename = "top_5000_stocks.csv"
         with z.open(csv_filename) as f:
@@ -36,27 +35,27 @@ def run_optimizer(sector_selection, min_market_cap_bil, risk_aversion,
     if sector_selection:
         df = df[df["Sector"].isin(sector_selection)]
 
-    # Optional: Filter by market cap if available
+    # Optional: Filter by market cap
     if "Marketcap" in df.columns:
         df = df[df["Marketcap"] >= min_market_cap_bil * 1e9]
 
     if df.empty:
         raise ValueError("❌ No tickers match your filters.")
 
-    # Clean price columns
+    # Clean price data
     exclude_cols = ["Ticker", "Company", "Sector", "Industry", "Marketcap"]
     price_cols = df.columns.difference(exclude_cols)
     df_prices_clean = df[["Ticker"] + list(price_cols)].copy()
     df_prices_clean[price_cols] = df_prices_clean[price_cols].replace(r'[\$,]', '', regex=True).astype(float)
 
-    # Transpose for optimization
+    # Transpose to get (dates x tickers)
     prices = df_prices_clean.set_index("Ticker")[price_cols].T
     prices.index = pd.to_datetime(prices.index, errors='coerce')
     prices = prices.dropna(how="all")
 
     st.info(f"📊 Price matrix: {prices.shape[0]} days × {prices.shape[1]} tickers")
 
-    # Drop columns with too many missing values
+    # Drop tickers with >30% missing data
     valid_tickers = prices.columns[prices.isna().mean() < 0.3]
     prices = prices[valid_tickers].dropna(axis=1)
     st.info(f"🧼 Tickers after cleaning: {len(valid_tickers)}")
@@ -64,15 +63,15 @@ def run_optimizer(sector_selection, min_market_cap_bil, risk_aversion,
     if len(valid_tickers) < 2:
         raise ValueError("❌ Not enough valid tickers after cleaning.")
 
-    # Calculate returns
+    # Calculate daily returns
     returns = prices.pct_change().dropna()
 
-    # Riskfolio Optimization
+    # Riskfolio-Lib setup
     port = rp.Portfolio(returns=returns)
     port.assets_stats(method_mu='hist', method_cov='ledoit')
 
     model = 'Classic'
-    rm = 'MV'
+    rm = 'MV'  # Mean-Variance Risk Measure
     obj = 'Sharpe' if optimization_type == 'Max Sharpe' else 'MinRisk'
 
     weights = port.optimization(
