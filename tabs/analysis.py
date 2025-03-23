@@ -9,11 +9,11 @@ import riskfolio as rp
 def analysis_tab():
     st.title("📊 Strategy Builder & Optimizer")
 
-    # --- Load sectors from cached data ---
+    # --- Load cached data & sectors ---
     df = load_filtered_top_stocks()
     sector_options = sorted(df['Sector'].dropna().unique())
 
-    # --- Filters ---
+    # --- Strategy Filters ---
     st.subheader("🧠 Strategy Filters")
     col1, col2 = st.columns([2, 1])
     with col1:
@@ -58,15 +58,23 @@ def analysis_tab():
                 elapsed = time.time() - start_time
                 st.success(f"✅ Optimization completed in {elapsed:.2f} seconds")
 
+                # Show results
                 st.subheader("📋 Optimized Portfolio Allocation")
                 st.dataframe(weights_df)
 
+                # Download weights
                 csv = weights_df.to_csv(index=False).encode("utf-8")
                 st.download_button("Download Portfolio as CSV", csv, file_name="optimized_portfolio.csv")
 
+                # Efficient Frontier
                 st.subheader("📈 Efficient Frontier")
                 fig = plot_efficient_frontier(port)
                 st.pyplot(fig)
+
+                # 📤 Send to Performance tab
+                if st.button("📤 Send to Performance Tab"):
+                    st.session_state["optimized_portfolio"] = weights_df
+                    st.success("Portfolio sent to Performance tab.")
 
             except Exception as e:
                 st.error(f"❌ Optimization failed: {e}")
