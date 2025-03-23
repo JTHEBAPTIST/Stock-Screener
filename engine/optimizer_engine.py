@@ -4,70 +4,76 @@ import riskfolio as rp
 import streamlit as st
 import requests
 import io
-import os
 
-# ✅ Primary: Try Google Sheets
-@st.cache_data(show_spinner="📥 Loading portfolio data...")
-def load_portfolio_csv_from_drive():
-    try:
-        url = "https://docs.google.com/spreadsheets/d/1b116oKivSrDqi6UkrALD5-FiFcsun2nn/export?format=csv"
-        r = requests.get(url)
-        if r.status_code != 200:
-            raise ValueError("Google Sheets not available.")
-        return pd.read_csv(io.StringIO(r.text))
-    except Exception as e:
-        st.warning("⚠️ Google Sheets load failed. Using local Excel fallback.")
-        local_path = "C:/Users/Admin/Downloads/stock_Fund_price.xlsx"
-        if not os.path.exists(local_path):
-            raise FileNotFoundError("❌ Local Excel file not found. Please check path.")
-        return pd.read_excel(local_path)
+# ✅ Load static company metadata from GitHub repo (data folder)
+@st.cache_data(show_spinner="📥 Loading static metadata...")
+def load_static_metadata():
+    return pd.read_csv("data/Static data.csv")
 
-# ✅ Main Optimization Function
+# ✅ Load time series price data from Google Drive CSV
+@st.cache_data(show_spinner="📈 Loading time series price data...")
+def load_price_data_from_drive():
+    file_id = "1k2zUxdD5OcdeINR2gWJYGAo5GxBmkbPr"
+    url = f"https://drive.google.com/uc?id={file_id}&export=download"
+    r = requests.get(url)
+    if r.status_code != 200:
+        raise ValueError("❌ Failed to load price data from Google Drive.")
+    df = pd.read_csv(io.StringIO(r.text))
+    return df
+
+# ✅ Main Optimizer
 def run_optimizer(sector_selection, min_market_cap_bil, risk_aversion,
                   tracking_error_limit, optimization_type,
                   max_weight=0.2, max_holdings=15):
 
-    # Load from either Sheets or fallback Excel
-    df = load_portfolio_csv_from_drive()
+    # Load data
+    df_prices = load_price_data_from_drive()
+    df_meta = load_static_metadata()
 
-    # --- Column validation ---
-    required_cols = ["Ticker", "Company", "Marketcap", "Sector", "Industry"]
-    if not all(col in df.columns for col in required_cols[:3]):
-        raise ValueError("Missing key columns: Ticker / Marketcap / Company")
+    # Merge price data with metadata on 'Ticker'
+    df = pd.merge(df_prices, df_meta, on="Ticker", how="inner")
 
-    # --- Filter by sector and market cap ---
-    if "Sector" in df.columns and sector_selection:
-        df = df[df['Sector'].isin(sector_selection)]
+    # Validate structure
+    required = ["Ticker", "Sector"]
+    for col in required:
+        if col not in df.columns:
+            raise ValueError(f"Missing required column: {col}")
+
+    # --- Filter by Sector ---
+    if sector_selection:
+        df = df[df["Sector"].isin(sector_selection)]
+
+    # --- Filter by Market Cap (if available) ---
     if "Marketcap" in df.columns:
-        df = df[df['Marketcap'] >= min_market_cap_bil * 1e9]
+        df = df[df["Marketcap"] >= min_market_cap_bil * 1e9]
 
     if df.empty:
         raise ValueError("❌ No tickers match your filters.")
 
-    # --- Extract price data ---
-    price_cols = df.columns[5:]
-    df_prices = df[['Ticker'] + list(price_cols)].copy()
-    df_prices[price_cols] = df_prices[price_cols].replace(r'[\$,]', '', regex=True).astype(float)
+    # --- Clean Price Data ---
+    price_cols = df.columns.difference(["Ticker", "Company", "Sector", "Industry", "Marketcap"])
+    df_prices_clean = df[["Ticker"] + list(price_cols)].copy()
+    df_prices_clean[price_cols] = df_prices_clean[price_cols].replace(r'[\$,]', '', regex=True).astype(float)
 
-    prices = df_prices.set_index("Ticker")[price_cols].T
+    # Transpose to (dates × tickers)
+    prices = df_prices_clean.set_index("Ticker")[price_cols].T
     prices.index = pd.to_datetime(prices.index, errors='coerce')
     prices = prices.dropna(how="all")
 
     st.info(f"📊 Price matrix: {prices.shape[0]} days × {prices.shape[1]} tickers")
 
-    # --- Filter clean tickers ---
+    # --- Drop columns with too much missing data ---
     valid_tickers = prices.columns[prices.isna().mean() < 0.3]
     prices = prices[valid_tickers].dropna(axis=1)
-
     st.info(f"🧼 Tickers after cleaning: {len(valid_tickers)}")
 
     if len(valid_tickers) < 2:
-        raise ValueError("❌ Not enough clean tickers for optimization.")
+        raise ValueError("❌ Not enough valid tickers after cleaning.")
 
-    # --- Calculate returns ---
+    # --- Returns ---
     returns = prices.pct_change().dropna()
 
-    # --- Riskfolio Optimization ---
+    # --- Riskfolio Optimizer ---
     port = rp.Portfolio(returns=returns)
     port.assets_stats(method_mu='hist', method_cov='ledoit')
 
@@ -88,10 +94,10 @@ def run_optimizer(sector_selection, min_market_cap_bil, risk_aversion,
     )
 
     # --- Final Output ---
-    sector_map = dict(zip(df['Ticker'], df.get('Sector', 'Unknown')))
+    sector_map = dict(zip(df["Ticker"], df["Sector"]))
     weights_df = weights.reset_index()
-    weights_df.columns = ['Ticker', 'Weight']
-    weights_df['Sector'] = weights_df['Ticker'].map(sector_map)
-    weights_df['Contribution'] = weights_df['Weight'] * 100
+    weights_df.columns = ["Ticker", "Weight"]
+    weights_df["Sector"] = weights_df["Ticker"].map(sector_map)
+    weights_df["Contribution"] = weights_df["Weight"] * 100
 
     return weights_df, port
