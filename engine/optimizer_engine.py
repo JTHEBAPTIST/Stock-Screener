@@ -2,31 +2,40 @@ import pandas as pd
 import numpy as np
 import riskfolio as rp
 import streamlit as st
+import requests
+import io
+
+# Load file from Google Drive
+def load_from_gdrive(file_id):
+    url = f"https://drive.google.com/uc?id={file_id}"
+    response = requests.get(url)
+    if response.status_code != 200:
+        raise ValueError("❌ Failed to download file from Google Drive.")
+    return pd.read_csv(io.StringIO(response.text))
 
 def run_optimizer(sector_selection, min_market_cap_bil, risk_aversion,
                   tracking_error_limit, optimization_type, max_weight=0.2, max_holdings=15):
-    
-    # Load full combined data
-    df = pd.read_csv("data/filtered_top_stocks.csv")
 
-    # Filter by selected sectors
+    # 🔗 Load from Google Drive (replace this with your real file ID)
+    file_id = "1XyOn6UwAvKvvxMeHkOGYrY4txIOpFwdy"
+    df = load_from_gdrive(file_id)
+
+    # Filter by sector + market cap
     if sector_selection:
         df = df[df['Sector'].isin(sector_selection)]
-
-    # Filter by market cap
     df = df[df['Marketcap'] >= min_market_cap_bil * 1e9]
 
     if df.empty:
-        raise ValueError("No tickers matched the selected filters.")
+        raise ValueError("❌ No tickers matched the selected filters.")
 
-    # Identify price columns
-    price_cols = df.columns[5:]  # Assuming first 5 columns = Ticker, Company, Marketcap, Sector, Industry
+    # Identify price columns (assumes first 5 are metadata)
+    price_cols = df.columns[5:]
 
-    # Extract and clean price data
+    # Clean price values
     df_prices = df[["Ticker"] + list(price_cols)].copy()
     df_prices[price_cols] = df_prices[price_cols].replace('[\$,]', '', regex=True).astype(float)
 
-    # Transpose for Riskfolio format
+    # Transpose: rows = dates, columns = tickers
     prices = df_prices.set_index("Ticker")[price_cols].T
     prices.index = pd.to_datetime(prices.index, errors='coerce')
     prices = prices.dropna(how="all")
@@ -41,9 +50,9 @@ def run_optimizer(sector_selection, min_market_cap_bil, risk_aversion,
     returns = prices.pct_change().dropna()
 
     if returns.shape[1] < 2:
-        raise ValueError("Not enough clean tickers to run optimization.")
+        raise ValueError("❌ Not enough clean tickers to run optimization.")
 
-    # Sector map for final output
+    # Map sectors to tickers
     sector_map = dict(zip(df['Ticker'], df['Sector']))
 
     # Build Riskfolio portfolio
@@ -66,7 +75,7 @@ def run_optimizer(sector_selection, min_market_cap_bil, risk_aversion,
         maxnumassets=min(max_holdings, len(returns.columns))
     )
 
-    # Finalize weights DataFrame
+    # Format output
     weights_df = weights.reset_index()
     weights_df.columns = ['Ticker', 'Weight']
     weights_df['Sector'] = weights_df['Ticker'].map(sector_map)
