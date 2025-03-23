@@ -2,16 +2,16 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import time
-from engine.optimizer_engine import run_optimizer
-from engine.data_loader import load_filtered_top_stocks
+from engine.optimizer_engine import run_optimizer, load_portfolio_csv_from_drive
 import riskfolio as rp
 
 def analysis_tab():
     st.title("📊 Strategy Builder & Optimizer")
 
-    # --- Load cached data & sectors ---
-    df = load_filtered_top_stocks()
+    # --- Load sectors from Google Drive CSV ---
+    df = load_portfolio_csv_from_drive()  # ✅ Real source for optimizer
     sector_options = sorted(df['Sector'].dropna().unique())
+    st.caption(f"✔️ Loaded {len(sector_options)} unique sectors from Google Drive dataset.")
 
     # --- Strategy Filters ---
     st.subheader("🧠 Strategy Filters")
@@ -58,7 +58,6 @@ def analysis_tab():
                 elapsed = time.time() - start_time
                 st.success(f"✅ Optimization completed in {elapsed:.2f} seconds")
 
-                # Show results
                 st.subheader("📋 Optimized Portfolio Allocation")
                 st.dataframe(weights_df)
 
@@ -71,7 +70,7 @@ def analysis_tab():
                 fig = plot_efficient_frontier(port)
                 st.pyplot(fig)
 
-                # 📤 Send to Performance tab
+                # Send to performance tab
                 if st.button("📤 Send to Performance Tab"):
                     st.session_state["optimized_portfolio"] = weights_df
                     st.success("Portfolio sent to Performance tab.")
