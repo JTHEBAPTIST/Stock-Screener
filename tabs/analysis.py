@@ -5,51 +5,50 @@ import time
 from engine.optimizer_engine import run_optimizer
 import riskfolio as rp
 
-
 @st.cache_data
 def load_sector_options():
-    df = pd.read_csv("data/tickers_full_cleaned.csv")
-    return sorted(df['FactSet Econ Sector'].dropna().unique())
-
+    df = pd.read_csv("data/filtered_top_stocks.csv")
+    return sorted(df['Sector'].dropna().unique())
 
 def analysis_tab():
     st.title("📊 Strategy Builder & Optimizer")
 
-    st.subheader("🧠 Strategy Parameters")
-    col1, col2, col3 = st.columns(3)
-
+    # --- Filters ---
+    st.subheader("🧠 Strategy Filters")
+    col1, col2 = st.columns([2, 1])
     with col1:
-        optimization_type = st.selectbox("Optimization Type", ["Mean-Variance", "Max Sharpe"])
-    
-    sector_options = load_sector_options()
-    with col2:
+        sector_options = load_sector_options()
         select_all = st.checkbox("Select All Sectors")
-        selected_universe = st.multiselect("Choose Sectors", sector_options,
-                                           default=sector_options if select_all else [])
-    
-    with col3:
-        risk_aversion = st.slider("Risk Aversion", 0.0, 10.0, 2.0)
+        selected_sectors = sector_options if select_all else st.multiselect("Choose Sectors", sector_options)
 
-    st.markdown("### 🔧 Constraints")
-    col4, col5 = st.columns(2)
+    with col2:
+        min_market_cap = st.number_input("Min Market Cap (Billions)", value=10.0)
+
+    # --- Optimization Settings ---
+    st.subheader("⚙️ Optimization Settings")
+    col3, col4, col5 = st.columns(3)
+    with col3:
+        optimization_type = st.selectbox("Optimization Type", ["Mean-Variance", "Max Sharpe"])
     with col4:
-        max_weight = st.slider("Max Weight per Stock (%)", 5, 100, 20)
+        risk_aversion = st.slider("Risk Aversion", 0.0, 10.0, 2.0)
     with col5:
+        tracking_error_limit = st.number_input("Tracking Error Limit (future use)", value=0.05)
+
+    col6, col7 = st.columns(2)
+    with col6:
+        max_weight = st.slider("Max Weight per Stock (%)", 5, 100, 20)
+    with col7:
         max_holdings = st.slider("Max Number of Holdings", 5, 50, 15)
 
-    tracking_error_limit = st.number_input("Tracking Error Limit (future use)", value=0.05)
-
+    # --- Run Optimization ---
     if st.button("🚀 Run Optimization"):
-        with st.spinner("Optimizing portfolio using Riskfolio-Lib..."):
+        with st.spinner("Running optimization..."):
             try:
-                if not selected_universe:
-                    st.warning("⚠️ Please select at least one sector.")
-                    return
-
                 start_time = time.time()
 
                 weights_df, port = run_optimizer(
-                    sector_selection=selected_universe,
+                    sector_selection=selected_sectors,
+                    min_market_cap_bil=min_market_cap,
                     risk_aversion=risk_aversion,
                     tracking_error_limit=tracking_error_limit,
                     optimization_type=optimization_type,
@@ -73,8 +72,7 @@ def analysis_tab():
             except Exception as e:
                 st.error(f"❌ Optimization failed: {e}")
 
-
-# 🔧 Efficient Frontier Plot
+# Efficient Frontier Plot
 def plot_efficient_frontier(portfolio_object):
     try:
         frontier = portfolio_object.efficient_frontier(model='Classic', rm='MV', points=50)
