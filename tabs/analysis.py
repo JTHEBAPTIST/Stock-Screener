@@ -6,21 +6,19 @@ import difflib
 from engine.optimizer_engine import run_optimizer, load_portfolio_csv_from_drive
 import riskfolio as rp
 
+
 def analysis_tab():
     st.title("📊 Strategy Builder & Optimizer")
 
     # --- Load CSV from Google Drive ---
     df = load_portfolio_csv_from_drive()
 
-    # 🧠 Debug: show available columns
+    # 🧠 Debug: Show available columns
     st.caption(f"📄 Columns in dataset: {df.columns.tolist()}")
 
     # --- Detect Sector Column ---
-    sector_col = None
-    potential_cols = difflib.get_close_matches("Sector", df.columns, n=1)
-    if potential_cols:
-        sector_col = potential_cols[0]
-    else:
+    sector_col = detect_column(df, "Sector")
+    if not sector_col:
         st.error("❌ No column resembling 'Sector' found in uploaded data.")
         st.stop()
 
@@ -73,19 +71,15 @@ def analysis_tab():
                 elapsed = time.time() - start_time
                 st.success(f"✅ Optimization completed in {elapsed:.2f} seconds")
 
-                st.subheader("📋 Optimized Portfolio Allocation")
-                st.dataframe(weights_df)
-
-                # Download weights
-                csv = weights_df.to_csv(index=False).encode("utf-8")
-                st.download_button("Download Portfolio as CSV", csv, file_name="optimized_portfolio.csv")
+                # Display intermediate results
+                display_optimization_results(weights_df)
 
                 # Efficient Frontier
                 st.subheader("📈 Efficient Frontier")
                 fig = plot_efficient_frontier(port)
                 st.pyplot(fig)
 
-                # Send to performance tab
+                # Send to Performance Tab
                 if st.button("📤 Send to Performance Tab"):
                     st.session_state["optimized_portfolio"] = weights_df
                     st.success("Portfolio sent to Performance tab.")
@@ -93,13 +87,40 @@ def analysis_tab():
             except Exception as e:
                 st.error(f"❌ Optimization failed: {e}")
 
+
+# Helper Function: Detect Column
+def detect_column(df, target_column):
+    """Detect a column in the dataframe that closely matches the target column name."""
+    potential_cols = difflib.get_close_matches(target_column.lower(), df.columns.str.lower(), n=1)
+    return potential_cols[0] if potential_cols else None
+
+
+# Helper Function: Display Optimization Results
+def display_optimization_results(weights_df):
+    """Display the optimized portfolio allocation and provide download options."""
+    if weights_df.empty:
+        st.warning("⚠️ No stocks passed the filters.")
+        return
+
+    # Display weights dataframe
+    st.subheader("📋 Optimized Portfolio Allocation")
+    st.dataframe(weights_df)
+
+    # Download weights as CSV
+    csv = weights_df.to_csv(index=False).encode("utf-8")
+    st.download_button("Download Portfolio as CSV", csv, file_name="optimized_portfolio.csv")
+
+
 # Efficient Frontier Plot
 def plot_efficient_frontier(portfolio_object):
+    """Plot the efficient frontier for the portfolio."""
     try:
         frontier = portfolio_object.efficient_frontier(model='Classic', rm='MV', points=50)
         fig, ax = plt.subplots(figsize=(10, 5))
         rp.plot_frontier(portfolio_object, frontier=frontier, ax=ax, rm='MV', showfig=False)
         ax.set_title("Efficient Frontier")
+        ax.set_xlabel("Risk (Standard Deviation)")
+        ax.set_ylabel("Return")
         return fig
     except Exception as e:
         fig, ax = plt.subplots()
