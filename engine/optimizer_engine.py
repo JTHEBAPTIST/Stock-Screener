@@ -1,96 +1,128 @@
-import pandas as pd
-import numpy as np
-import riskfolio as rp
 import streamlit as st
-import zipfile
+import pandas as pd
+import matplotlib.pyplot as plt
+import time
+import difflib
+from engine.optimizer_engine import run_optimizer, load_portfolio_csv_from_drive
+import riskfolio as rp
 
-# ✅ Load static metadata (Ticker, Company, Sector, Industry)
-@st.cache_data(show_spinner="📥 Loading static metadata...")
-def load_static_metadata():
-    return pd.read_csv("data/Static data.csv")
 
-# ✅ Load time series data from zipped CSV
-@st.cache_data(show_spinner="📈 Loading time series from ZIP...")
-def load_price_data_from_zip():
-    zip_path = "data/top_5000_stocks.zip"  # ✅ Correct path inside your GitHub repo
-    with zipfile.ZipFile(zip_path, 'r') as z:
-        csv_filename = "top_5000_stocks.csv"
-        with z.open(csv_filename) as f:
-            df = pd.read_csv(f)
-    return df
+def analysis_tab():
+    st.title("📊 Strategy Builder & Optimizer")
 
-# ✅ Main optimizer function
-def run_optimizer(sector_selection, min_market_cap_bil, risk_aversion,
-                  tracking_error_limit, optimization_type,
-                  max_weight=0.2, max_holdings=15):
+    # --- Load CSV from Google Drive ---
+    df = load_portfolio_csv_from_drive()
 
-    # Load time series + static metadata
-    df_prices = load_price_data_from_zip()
-    df_meta = load_static_metadata()
+    # 🧠 Debug: Show available columns
+    st.caption(f"📄 Columns in dataset: {df.columns.tolist()}")
 
-    # Merge on Ticker
-    df = pd.merge(df_prices, df_meta, on="Ticker", how="inner")
+    # --- Detect Sector Column ---
+    sector_col = detect_column(df, "Sector")
+    if not sector_col:
+        st.error("❌ No column resembling 'Sector' found in uploaded data.")
+        st.stop()
 
-    # Filter by sector
-    if sector_selection:
-        df = df[df["Sector"].isin(sector_selection)]
+    # --- Get Sector Options ---
+    sector_options = sorted(df[sector_col].dropna().unique())
+    st.caption(f"✔️ Using column: `{sector_col}` — found {len(sector_options)} unique sectors.")
 
-    # Optional: Filter by market cap
-    if "Marketcap" in df.columns:
-        df = df[df["Marketcap"] >= min_market_cap_bil * 1e9]
+    # --- Strategy Filters ---
+    st.subheader("🧠 Strategy Filters")
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        select_all = st.checkbox("Select All Sectors")
+        selected_sectors = sector_options if select_all else st.multiselect("Choose Sectors", sector_options)
 
-    if df.empty:
-        raise ValueError("❌ No tickers match your filters.")
+    with col2:
+        min_market_cap = st.number_input("Min Market Cap (Billions)", value=10.0)
 
-    # Clean price data
-    exclude_cols = ["Ticker", "Company", "Sector", "Industry", "Marketcap"]
-    price_cols = df.columns.difference(exclude_cols)
-    df_prices_clean = df[["Ticker"] + list(price_cols)].copy()
-    df_prices_clean[price_cols] = df_prices_clean[price_cols].replace(r'[\$,]', '', regex=True).astype(float)
+    # --- Optimization Settings ---
+    st.subheader("⚙️ Optimization Settings")
+    col3, col4, col5 = st.columns(3)
+    with col3:
+        optimization_type = st.selectbox("Optimization Type", ["Mean-Variance", "Max Sharpe"])
+    with col4:
+        risk_aversion = st.slider("Risk Aversion", 0.0, 10.0, 2.0)
+    with col5:
+        tracking_error_limit = st.number_input("Tracking Error Limit (future use)", value=0.05)
 
-    # Transpose to get (dates x tickers)
-    prices = df_prices_clean.set_index("Ticker")[price_cols].T
-    prices.index = pd.to_datetime(prices.index, errors='coerce')
-    prices = prices.dropna(how="all")
+    col6, col7 = st.columns(2)
+    with col6:
+        max_weight = st.slider("Max Weight per Stock (%)", 5, 100, 20)
+    with col7:
+        max_holdings = st.slider("Max Number of Holdings", 5, 50, 15)
 
-    st.info(f"📊 Price matrix: {prices.shape[0]} days × {prices.shape[1]} tickers")
+    # --- Run Optimization ---
+    if st.button("🚀 Run Optimization"):
+        with st.spinner("Running optimization..."):
+            try:
+                start_time = time.time()
 
-    # Drop tickers with >30% missing data
-    valid_tickers = prices.columns[prices.isna().mean() < 0.3]
-    prices = prices[valid_tickers].dropna(axis=1)
-    st.info(f"🧼 Tickers after cleaning: {len(valid_tickers)}")
+                weights_df, port = run_optimizer(
+                    sector_selection=selected_sectors,
+                    min_market_cap_bil=min_market_cap,
+                    risk_aversion=risk_aversion,
+                    tracking_error_limit=tracking_error_limit,
+                    optimization_type=optimization_type,
+                    max_weight=max_weight / 100,
+                    max_holdings=max_holdings
+                )
 
-    if len(valid_tickers) < 2:
-        raise ValueError("❌ Not enough valid tickers after cleaning.")
+                elapsed = time.time() - start_time
+                st.success(f"✅ Optimization completed in {elapsed:.2f} seconds")
 
-    # Calculate daily returns
-    returns = prices.pct_change().dropna()
+                # Display intermediate results
+                display_optimization_results(weights_df)
 
-    # Riskfolio-Lib setup
-    port = rp.Portfolio(returns=returns)
-    port.assets_stats(method_mu='hist', method_cov='ledoit')
+                # Efficient Frontier
+                st.subheader("📈 Efficient Frontier")
+                fig = plot_efficient_frontier(port)
+                st.pyplot(fig)
 
-    model = 'Classic'
-    rm = 'MV'  # Mean-Variance Risk Measure
-    obj = 'Sharpe' if optimization_type == 'Max Sharpe' else 'MinRisk'
+                # Send to Performance Tab
+                if st.button("📤 Send to Performance Tab"):
+                    st.session_state["optimized_portfolio"] = weights_df
+                    st.success("Portfolio sent to Performance tab.")
 
-    weights = port.optimization(
-        model=model,
-        rm=rm,
-        obj=obj,
-        rf=0.02,
-        l=risk_aversion,
-        hist=True,
-        upper_bounds=max_weight,
-        lower_bounds=0.01,
-        maxnumassets=min(max_holdings, len(returns.columns))
-    )
+            except Exception as e:
+                st.error(f"❌ Optimization failed: {e}")
 
-    # Final formatting
-    sector_map = dict(zip(df["Ticker"], df["Sector"]))
-    weights_df = weights.reset_index()
-    weights_df.columns = ["Ticker", "Weight"]
-    weights_df["Sector"] = weights_df["Ticker"].map(sector_map)
-    weights_df["Contribution"] = weights_df["Weight"] * 100
 
-    return weights_df, port
+# Helper Function: Detect Column
+def detect_column(df, target_column):
+    """Detect a column in the dataframe that closely matches the target column name."""
+    potential_cols = difflib.get_close_matches(target_column.lower(), df.columns.str.lower(), n=1)
+    return potential_cols[0] if potential_cols else None
+
+
+# Helper Function: Display Optimization Results
+def display_optimization_results(weights_df):
+    """Display the optimized portfolio allocation and provide download options."""
+    if weights_df.empty:
+        st.warning("⚠️ No stocks passed the filters.")
+        return
+
+    # Display weights dataframe
+    st.subheader("📋 Optimized Portfolio Allocation")
+    st.dataframe(weights_df)
+
+    # Download weights as CSV
+    csv = weights_df.to_csv(index=False).encode("utf-8")
+    st.download_button("Download Portfolio as CSV", csv, file_name="optimized_portfolio.csv")
+
+
+# Efficient Frontier Plot
+def plot_efficient_frontier(portfolio_object):
+    """Plot the efficient frontier for the portfolio."""
+    try:
+        frontier = portfolio_object.efficient_frontier(model='Classic', rm='MV', points=50)
+        fig, ax = plt.subplots(figsize=(10, 5))
+        rp.plot_frontier(portfolio_object, frontier=frontier, ax=ax, rm='MV', showfig=False)
+        ax.set_title("Efficient Frontier")
+        ax.set_xlabel("Risk (Standard Deviation)")
+        ax.set_ylabel("Return")
+        return fig
+    except Exception as e:
+        fig, ax = plt.subplots()
+        ax.text(0.5, 0.5, f"Frontier failed:\n{e}", ha='center', va='center')
+        return fig
