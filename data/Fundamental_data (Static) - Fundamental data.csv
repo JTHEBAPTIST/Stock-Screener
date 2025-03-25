@@ -1,4 +1,4 @@
-Company Name,CUSIP,Sedol,Sector,Industry,Instrument Type,Country,Currency ,Exchange Name,Ticker
+Company Name,CUSIP,Sedol,Sector,Industry,Instrument Type,Country,Currency,Exchange Name,Ticker
 Apple Inc.,037833100,2046251,Electronic Technology,Telecommunications Equipment,Common stock,UNITED STATES,U.S. Dollar,NASDAQ,AAPL
 NVIDIA Corporation,67066G104,2379504,Electronic Technology,Semiconductors,Common stock,UNITED STATES,U.S. Dollar,NASDAQ,NVDA
 Microsoft Corporation,594918104,2588173,Technology Services,Packaged Software,Common stock,UNITED STATES,U.S. Dollar,NASDAQ,MSFT
