@@ -7,43 +7,6 @@ from engine.screener_engine import run_screener
 def screener_tab():
     st.title("Equity Screener")
 
-    # ----- Filters Panel (Top) -----
-    st.subheader("Select Screening Criteria")
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        exchange = st.multiselect(
-            "Exchange",
-            ["NASDAQ", "NYSE", "AMEX"],
-            default=["NASDAQ", "NYSE", "AMEX"]
-        )
-    
-    with col2:
-        sector = st.multiselect(
-            "Sector",
-            ["Technology", "Healthcare", "Finance", "Consumer", "Energy", "Retail", "Utilities", "Industrials"],
-            default=[]
-        )
-
-    with col3:
-        min_market_cap = st.number_input(
-            "Min Market Cap (Billions USD)",
-            value=10.0,
-            step=1.0
-        )
-
-    st.markdown("---")
-
-    # ----- Optional: Search Bar & Toggle -----
-    ticker_search = st.text_input("Search for a Ticker or Company Name")
-    show_all_columns = st.checkbox("Show All Columns", value=False)
-
-    df = run_screener(exchange, sector, min_market_cap)
-
-    if ticker_search:
-        df = df[df['FDS Symbol Ticker'].str.contains(ticker_search, case=False, na=False) |
-                df['Company Name'].str.contains(ticker_search, case=False, na=False)]
-
     default_cols = [
         "Company Name", "CUSIP", "Company Sedol", "FactSet Econ Sector", "FactSet Ind",
         "Gen Sec Type Desc", "Nation", "Curncy Name", "Exchange Name (VND)", "Latest Price",
